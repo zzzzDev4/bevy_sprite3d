@@ -38,6 +38,7 @@ pub struct MatKey {
     alpha_mode: HashableAlphaMode,
     unlit: bool,
     emissive: [u8; 4],
+    base_color: [u8; 4],
 }
 
 const DEFAULT_ALPHA_MODE: AlphaMode = AlphaMode::Mask(0.5);
@@ -158,7 +159,7 @@ fn quad(w: f32, h: f32, pivot: Option<Vec2>, double_sided: bool) -> Mesh {
 
 
 // generate a StandardMaterial useful for rendering a sprite
-fn material(image: Handle<Image>, alpha_mode: AlphaMode, unlit: bool, emissive: LinearRgba) -> StandardMaterial {
+fn material(image: Handle<Image>, alpha_mode: AlphaMode, unlit: bool, emissive: LinearRgba, base_color: Color) -> StandardMaterial {
     StandardMaterial {
         base_color_texture: Some(image),
         cull_mode: Some(Face::Back),
@@ -167,6 +168,7 @@ fn material(image: Handle<Image>, alpha_mode: AlphaMode, unlit: bool, emissive: 
         perceptual_roughness: 0.5,
         reflectance: 0.15,
         emissive,
+        base_color,
 
         ..Default::default()
     }
@@ -215,6 +217,10 @@ pub struct Sprite3dBuilder {
     /// An emissive colour, if the sprite should emit light.
     /// `LinearRgba::Black` (default) does nothing.
     pub emissive: LinearRgba,
+
+    /// The sprite's colour tint.
+    /// `Color::White` (default) does nothing.
+    pub base_color: Color,
 }
 
 impl Default for Sprite3dBuilder {
@@ -227,6 +233,7 @@ impl Default for Sprite3dBuilder {
             unlit: false,
             double_sided: true,
             emissive: LinearRgba::BLACK,
+            base_color: Color::WHITE,
         }
     }
 }
@@ -291,11 +298,12 @@ impl Sprite3dBuilder {
                     alpha_mode: HashableAlphaMode(self.alpha_mode),
                     unlit: self.unlit,
                     emissive: reduce_colour(self.emissive),
+                    base_color: reduce_colour(self.base_color.to_linear()),
                 };
 
                 MeshMaterial3d(if let Some(material) = params.caches.material_cache.get(&mat_key) { material.clone() }
                 else {
-                    let material = params.materials.add(material(self.image.clone(), self.alpha_mode, self.unlit, self.emissive));
+                    let material = params.materials.add(material(self.image.clone(), self.alpha_mode, self.unlit, self.emissive, self.base_color));
                     params.caches.material_cache.insert(mat_key, material.clone());
                     material
                 })
@@ -383,10 +391,11 @@ impl Sprite3dBuilder {
                     alpha_mode: HashableAlphaMode(self.alpha_mode),
                     unlit: self.unlit,
                     emissive: reduce_colour(self.emissive),
+                    base_color: reduce_colour(self.base_color.to_linear()),
                 };
                 MeshMaterial3d(if let Some(material) = params.caches.material_cache.get(&mat_key) { material.clone() }
                 else {
-                    let material = params.materials.add(material(self.image.clone(), self.alpha_mode, self.unlit, self.emissive));
+                    let material = params.materials.add(material(self.image.clone(), self.alpha_mode, self.unlit, self.emissive, self.base_color));
                     params.caches.material_cache.insert(mat_key, material.clone());
                     material
                 })
